@@ -6,6 +6,5 @@
 
 app/__pycache__
 app/index
-app/data
 app/bin
 app/lib
