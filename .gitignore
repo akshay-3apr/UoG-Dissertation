@@ -1,0 +1,11 @@
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# mac
+app/.DS_Store
+
+app/__pycache__
+app/index
+app/data
+app/bin
+app/lib

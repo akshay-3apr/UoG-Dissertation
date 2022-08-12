@@ -1,0 +1,73 @@
+python -m bestfirstsearch \
+--collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
+--dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
+--topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
+--termweights "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/pythonapp/app/data/ColBERT_BM25_termweights_trec_dl_top_50_splitqueryterms_False.csv" \
+--topK 10 \
+--maxnumterms 3 \
+--addtermsonly True \
+--evalmatrix 'rbo'
+
+python -m bestfirstsearch \
+--collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
+--dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
+--topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
+--topK 10 \
+--maxnumterms 3 \
+--addtermsonly True
+
+
+## relevant query commands
+python -m bestfirstsearch. \
+--collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
+--dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/colbert_res_debasis_relevant.csv" \
+--topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
+--termweights "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/pythonapp/app/data/ColBERT_BM25_termweights_trec_dl_top_50_splitqueryterms_False.csv" \
+--topK 10 \
+--addtermsonly True \
+--evalmatrix 'jaccard' \
+--maxnumstates 50 \
+--maxnumterms 3 
+
+
+python -m bestfirstsearch \
+--collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
+--dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
+--topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
+--topK 10 \
+--addtermsonly False \
+--evalmatrix 'jaccard' \
+--maxnumstates 100 \
+--maxnumterms 15
+
+python -m bestfirstsearch \
+--collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
+--dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
+--optimalquery "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/pythonapp/app/data/BM25_BESTFIRST_jaccard_trec_dl_top10_terms20_md5_ms50_soq_false.csv"
+--topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
+--topK 10 \
+--addtermsonly False \
+--evalmatrix 'jaccard' \
+--maxnumstates 50 \
+--maxnumterms 5
+
+python -m bestfirstsearch \
+--collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
+--dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/colbert_res_debasis_relevant.csv" \
+--topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
+--topK 10 \
+--addtermsonly False \
+--evalmatrix 'jaccard' \
+--maxnumstates 100 \
+--maxnumterms 15
+
+
+app % python -m bestfirstsearch \
+--collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
+--dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
+--topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
+--topK 10 \
+--addtermsonly False \
+--evalmatrix 'jaccard' \
+--maxnumstates 200 \
+--maxnumterms 15
