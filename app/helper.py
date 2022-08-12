@@ -242,6 +242,8 @@ def bestfirstsearch(args,vocabulary,qid,originalQuery,basemodel,comparisonDocSet
     if currentState[1] > bestperformingnode[1]:
       bestperformingnode=currentState
 
+    print("Best performing node: ",bestperformingnode)
+
     for token in vocabulary:
       newquery = currentState[0] + " " +token
       expandedquery = " ".join(sorted(newquery.split(" ")))
@@ -298,7 +300,6 @@ def calTermWeights(queryVocabularies,basemodel,dllm_docs,queries,similarity_type
         retrieved_doc.qid=qid
         # print("\n",retrieved_doc.info())
         for idx,group in retrieved_doc.groupby("query",as_index=False):
-          print(idx,group.shape[0])
           word = group['query'].unique()[0].split(" ")[-1]
           jscore = similarity(group,dllm_docs,simmilaritymatrix=similarity_type)
           diff = checkIncrement(basesimscore,jscore)
@@ -325,7 +326,6 @@ def calTermWeights(queryVocabularies,basemodel,dllm_docs,queries,similarity_type
               retrieved_doc.qid=qid
               # print("\n",retrieved_doc.info())
               for _,group in retrieved_doc.groupby("query",as_index=False):
-                print(_,group.shape[0])
                 word = group['query'].unique()[0].split(" ")[-1]
                 jscore = similarity(group,dllm_docs,simmilaritymatrix=similarity_type)
                 diff = checkIncrement(basesimscore,jscore)

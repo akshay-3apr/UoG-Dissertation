@@ -1,6 +1,5 @@
 from argparse import ArgumentParser
 from corpus import Dataset
-import random
 from tqdm import tqdm
 import pyterrier as pt
 import pandas as pd
@@ -21,13 +20,13 @@ def fetchtermweights(args,dllm_res,dataset,topicQueries):
     basemodel = pt.BatchRetrieve(dataset.getIndex(),num_results=50,wmodel=wmodel,properties={"termpipelines" : "Stopwords"})
 
     #set flag to split query terms
-    splitqueryterm= not args.addtermsonly
+    addtermsonly= args.addtermsonly
 
     #initiate the process
     queryVocabulary = generateVocabulary(dllm,index=dataset.getIndex())
-    result = calTermWeights(queryVocabulary,basemodel,dllm,topicQueries,similarity_type='jaccard',splitqueryterm=splitqueryterm)
+    result = calTermWeights(queryVocabulary,basemodel,dllm,topicQueries,similarity_type='jaccard',addtermsonly=addtermsonly)
     termWeights = pd.DataFrame(result, columns =['qid','original_query','expanded_query','word','jscore','improvement'])
-    termWeights.to_csv(f"data/ColBERT_{wmodel}_termweights_trec_dl_top_50_splitqueryterms_{splitqueryterm}.csv",\
+    termWeights.to_csv(f"data/ColBERT_{wmodel}_termweights_trec_dl_top_50_addtermsonly_{addtermsonly}.csv",\
         header=['qid','original_query','expanded_query','word','jscore','improvement'],index=False)
 
     return termWeights
@@ -134,6 +133,7 @@ if __name__=="__main__":
     parser.add_argument('--maxnumterms', dest='maxnumterms', default=3,type=int, help='maximum number of terms to consider for optimal query')
     parser.add_argument('--evalmatrix', dest='evalmatrix', default="jaccard", help='evaluation matrix to get the scores')
     args=parser.parse_args()
+    # print(args)
     # checks if pyterrier init method is called
     if not pt.started():
         pt.init(boot_packages=["com.github.terrierteam:terrier-prf:-SNAPSHOT"],logging='ERROR')

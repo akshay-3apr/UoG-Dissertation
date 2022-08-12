@@ -1,13 +1,4 @@
-python -m bestfirstsearch \
---collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
---dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
---topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
---termweights "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/pythonapp/app/data/ColBERT_BM25_termweights_trec_dl_top_50_splitqueryterms_False.csv" \
---topK 10 \
---maxnumterms 3 \
---addtermsonly True \
---evalmatrix 'rbo'
-
+<--Best First Search-->
 python -m bestfirstsearch \
 --collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
 --dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
@@ -40,34 +31,23 @@ python -m bestfirstsearch \
 --maxnumstates 100 \
 --maxnumterms 15
 
-python -m bestfirstsearch \
+<--Greedy Search-->
+
+python -m greedysearch \
 --collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
 --dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
---optimalquery "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/pythonapp/app/data/BM25_BESTFIRST_jaccard_trec_dl_top10_terms20_md5_ms50_soq_false.csv"
 --topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
+--termweights "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/UoG-Dissertation-git/app/data/ColBERT_BM25_termweights_trec_dl_top_50_addtermsonly_False.csv" \
 --topK 10 \
 --addtermsonly False \
 --evalmatrix 'jaccard' \
---maxnumstates 50 \
 --maxnumterms 5
 
-python -m bestfirstsearch \
---collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
---dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/colbert_res_debasis_relevant.csv" \
---topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
---topK 10 \
---addtermsonly False \
---evalmatrix 'jaccard' \
---maxnumstates 100 \
---maxnumterms 15
-
-
-app % python -m bestfirstsearch \
+python -m greedysearch \
 --collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
 --dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
 --topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
 --topK 10 \
---addtermsonly False \
+--addtermsonly True \
 --evalmatrix 'jaccard' \
---maxnumstates 200 \
 --maxnumterms 15
