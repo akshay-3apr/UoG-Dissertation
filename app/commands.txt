@@ -1,11 +1,18 @@
 <--Best First Search-->
+
 python -m bestfirstsearch \
 --collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
 --dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
---topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
+--topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics.csv" \
+--optimalquery "" \
 --topK 10 \
---maxnumterms 3 \
---addtermsonly True
+--wmodel BM25 \
+--addtermsonly True \
+--evalmatrix jaccard \
+--termselection RM3 \
+--maxbranching 30 \
+--maxnumstates 100 \
+--maxnumterms 5
 
 
 ## relevant query commands
@@ -18,18 +25,7 @@ python -m bestfirstsearch. \
 --addtermsonly True \
 --evalmatrix 'jaccard' \
 --maxnumstates 50 \
---maxnumterms 3 
-
-
-python -m bestfirstsearch \
---collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
---dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
---topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
---topK 10 \
---addtermsonly False \
---evalmatrix 'jaccard' \
---maxnumstates 100 \
---maxnumterms 15
+--maxnumterms 3
 
 <--Greedy Search-->
 

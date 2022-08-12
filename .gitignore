@@ -2,7 +2,7 @@
 .ipynb_checkpoints
 
 # mac
-app/.DS_Store
+.DS_Store
 
 app/__pycache__
 app/index
