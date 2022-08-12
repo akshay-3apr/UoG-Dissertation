@@ -45,7 +45,7 @@ def main(args):
     # top k documents to retrieve
     topK = args.topK
 
-    # get termWeights
+    # get weight model
     weightModel = args.wmodel
 
     # Number of terms to consider
@@ -83,7 +83,7 @@ def main(args):
     results = []
     if similaritymatrix.lower()=='rbo':
         assert args.optimalquery is not None, "Please provide the optimal query file"
-        optimalBFS_df = pd.read_csv(args.optimalquery, names=["Qid","Expanded Query","Evaluation Metric","Score","Original Query"], index_col=False, dtype=str)
+        optimalBFS_df = pd.read_csv(args.optimalquery, names=["qid","expandedquery","evaluationmetric","score","originalquery"], index_col=False, dtype=str)
 
         for row in tqdm(optimalBFS_df.to_dict(orient="records")):
             qid,query = str(row['Qid']),row['Expanded Query']
@@ -111,10 +111,10 @@ def main(args):
             results.append((qid, bpn[0], similaritymatrix, bpn[1]))
 
     print(*results,sep='\n')
-    df = pd.DataFrame(results, columns=["Qid", "Expanded Query", "Evaluation Metric", "Score"])
-    df = df.merge(topicQueries,left_on="Qid",right_on="qid").drop("qid",axis=1)
-    print(f"Average {similaritymatrix} score of {weightModel} using BFS: ", df.Score.mean())
-    df.to_csv(f"data/{weightModel}_BESTFIRST_{similaritymatrix}_trec_dl_top{topK}_terms_{maxbranching}_md{args.maxnumterms}_ms{args.maxnumstates}_addtermsonly_{addtermsonly}.csv",header=["Qid", "Expanded Query", "Evaluation Metric", "Score", "Original Query"], index=False)
+    df = pd.DataFrame(results, columns=["qid","expandedquery","evaluationmetric","score"])
+    df = df.merge(topicQueries,left_on="qid",right_on="qid")
+    print(f"Average {similaritymatrix} score of {weightModel} using BFS: ", df.score.mean())
+    df.to_csv(f"data/{weightModel}_BESTFIRST_{similaritymatrix}_trec_dl_top{topK}_terms_{maxbranching}_md{args.maxnumterms}_ms{args.maxnumstates}_addtermsonly_{addtermsonly}.csv",header=["qid","expandedquery","evaluationmetric","score","originalquery"], index=False)
 
 if __name__ == "__main__":
     parser = ArgumentParser(description='Process cmd arguments for Greedy Search')
@@ -122,20 +122,24 @@ if __name__ == "__main__":
     parser.add_argument('--dltop1000', dest='dltop1000', default=None,help='path to dltop1000 of DL model csv file')
     parser.add_argument('--topics', dest='topics',default=None, help='path to topics csv file')
     parser.add_argument('--qrels', dest='qrels',default=None, help='path to qrels csv file')
-    parser.add_argument('--termweights', dest='termweights',default=None, help='path to termweights csv file')
-    parser.add_argument('--topK', dest='topK', default=10, type=int,help='topK of dl model output to compare with LM model')
     parser.add_argument('--wmodel', dest='wmodel', default="BM25",help='weight model to be used to fetch records')
     parser.add_argument('--addtermsonly', dest='addtermsonly', type=lambda x: bool(strtobool(x)),default=True, help='boolean value to add terms to the query and remove when false')
     parser.add_argument('--evalmatrix', dest='evalmatrix',default="jaccard", help='evaluation matrix to get the scores')
     parser.add_argument('--termselection', dest='termselection',default="RM3", help='way to select terms for optimal query')
+    parser.add_argument('--topK', dest='topK', default=10, type=int,help='topK of dl model output to compare with LM model')
     parser.add_argument('--maxbranching', dest='maxbranching',default=30, type=int, help='maximum number of terms to consider in vocabulary')
     parser.add_argument('--maxnumstates', dest='maxnumstates',default=50, type=int, help='maximum number of states to be considered')
     parser.add_argument('--maxnumterms', dest='maxnumterms', default=3, type=int, help='maximum number of terms to consider for optimal query')
     parser.add_argument('--optimalquery', dest='optimalquery', default=None, help='Please provide the optimal query file for best first search')
     args = parser.parse_args()
     # checks if pyterrier init method is called
-    if not pt.started():
-        pt.init(boot_packages=["com.github.terrierteam:terrier-prf:-SNAPSHOT"], logging='ERROR')
+    try:
+        if not pt.started():
+            pt.init(boot_packages=["com.github.terrierteam:terrier-prf:-SNAPSHOT"], logging='ERROR')
+    except Exception as e:
+        # print(e)
+        print("Not able to load pyTerrier. Try running the python file again")
+        exit(1)
     
     # code to fetch terms from corpus and check the jaccard simiarity between the LMs and ColBERT
     main(args)

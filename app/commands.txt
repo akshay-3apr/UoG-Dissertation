@@ -20,7 +20,6 @@ python -m bestfirstsearch. \
 --collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
 --dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/colbert_res_debasis_relevant.csv" \
 --topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
---termweights "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/pythonapp/app/data/ColBERT_BM25_termweights_trec_dl_top_50_splitqueryterms_False.csv" \
 --topK 10 \
 --addtermsonly True \
 --evalmatrix 'jaccard' \

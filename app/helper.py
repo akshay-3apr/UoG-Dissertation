@@ -130,7 +130,7 @@ def generateRLMVocabulary(rlmscores,documents,index):
     vocabulary = []
     # sorting logic with rlm score
     if name in rlmscores.qid.values:
-      print(rlmscores[rlmscores.qid==name]['query'])
+      # print(rlmscores[rlmscores.qid==name]['query'])
       termRLMScores = {term.split("^")[0]:term.split("^")[1] for term in rlmscores[rlmscores.qid==name]['query'].values[0].split(" ")[1:]}
       termRLMScores = list(dict(sorted(termRLMScores.items(),key=lambda val:val[1],reverse=True)).keys())
       # termRLMScores = [term.split("^")[0] for term in rlmscores[rlmscores.qid==name]['query'].values[0].split(" ")[1:]]
@@ -206,7 +206,7 @@ def bestfirstsearch(args,vocabulary,qid,originalQuery,basemodel,comparisonDocSet
   stemmer = PorterStemmer()
   priorityQueue = PriorityQueue()
   bestperformingnode=None
-  originalQueryTerms = sorted(list(map(stemmer.stem,originalQuery.split(" "))))
+  originalQueryTerms = sorted(set(map(stemmer.stem,originalQuery.split(" "))))
   originalTermCount=len(originalQueryTerms)
   if addtermsonly:
     cleanedquery = " ".join(originalQueryTerms)
@@ -237,7 +237,6 @@ def bestfirstsearch(args,vocabulary,qid,originalQuery,basemodel,comparisonDocSet
     print("Length priorityQueue:",len(priorityQueue))
     currentState = priorityQueue.pop_state()
     print("currentState: ",currentState)
-    print("Best performing node: ",bestperformingnode)
 
     if currentState[1] > bestperformingnode[1]:
       bestperformingnode=currentState

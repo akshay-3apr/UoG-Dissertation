@@ -3,6 +3,7 @@ from corpus import Dataset
 from tqdm import tqdm
 import pyterrier as pt
 import pandas as pd
+import random
 from distutils.util import strtobool
 from nltk.stem.porter import PorterStemmer
 from helper import filterTopKRankRecord,calTermWeights,generateVocabulary,similarity,checkIncrement,fetchFeature
@@ -38,6 +39,7 @@ def greedysearch(args,pt):
         - args: command line arguments
         - pt: pyterrier object
     '''
+    random.seed(9678)
 
     #top k documents to retrieve
     topK=args.topK
