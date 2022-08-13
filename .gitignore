@@ -1,10 +1,11 @@
 # Jupyter Notebook
 .ipynb_checkpoints
-
 # mac
+../.DS_Store
 .DS_Store
 
 app/__pycache__
 app/index
 app/bin
 app/lib
+app/pyvenv.cfg
