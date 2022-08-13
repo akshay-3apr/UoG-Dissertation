@@ -206,7 +206,7 @@ def bestfirstsearch(args,vocabulary,qid,originalQuery,basemodel,comparisonDocSet
   stemmer = PorterStemmer()
   priorityQueue = PriorityQueue()
   bestperformingnode=None
-  originalQueryTerms = sorted(set(map(stemmer.stem,originalQuery.split(" "))))
+  originalQueryTerms = sorted(set(map(stemmer.stem,originalQuery.split(" ")))) #sort aplhabetically
   originalTermCount=len(originalQueryTerms)
   if addtermsonly:
     cleanedquery = " ".join(originalQueryTerms)
@@ -245,8 +245,8 @@ def bestfirstsearch(args,vocabulary,qid,originalQuery,basemodel,comparisonDocSet
 
     for token in vocabulary:
       newquery = currentState[0] + " " +token
-      expandedquery = " ".join(sorted(newquery.split(" ")))
-      #if state not already explored
+      expandedquery = " ".join(sorted(newquery.split(" "))) #sort aplhabetically
+      #if state not already explored and token is not in previous query
       if priorityQueue.check_state_exists(expandedquery) and token not in currentState[0]:
         retrieved_docs = basemodel.search(expandedquery)
         retrieved_docs.qid=qid
