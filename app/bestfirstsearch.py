@@ -72,7 +72,7 @@ def main(args):
     # get deep learning reranked output csv file
     dltopK = args.dltop1000
 
-    dllm_db = pd.read_csv(dltopK, sep=" ", header=None, names=["qid", "number", "docno", "rank", "score", "msg"], index_col=False)
+    dllm_db = pd.read_csv(dltopK, sep="\t", header=None, names=["qid", "number", "docno", "rank", "score", "msg"], index_col=False)
     dllm_db.sort_values(["qid", "rank"], inplace=True)
     dllm_db.qid = dllm_db.qid.astype('str')
     # colbert_db.info()
@@ -111,7 +111,6 @@ def main(args):
                 retrieved_docs.qid=qid
                 simscore = float(similarity(retrieved_docs,dllm,simmilaritymatrix="rbo"))
                 results.append((qid,query,similaritymatrix,simscore))
-
     else:
         
         # build vocabulary
