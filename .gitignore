@@ -8,3 +8,4 @@ app/index
 app/bin
 app/lib
 app/pyvenv.cfg
+app/testcode.py

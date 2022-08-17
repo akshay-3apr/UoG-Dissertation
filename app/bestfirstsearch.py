@@ -6,7 +6,8 @@ import pyterrier as pt
 import pandas as pd
 from distutils.util import strtobool
 from nltk.stem.porter import PorterStemmer
-from helper import filterTopKRankRecord, generateVocabulary, similarity, generateRLMVocabulary, generateLimitedVocabulary,bestfirstsearch
+from helper import filterTopKRankRecord, generateVocabulary, similarity, generateRLMVocabulary, generateLimitedVocabulary,bestfirstsearch,generateWord2vecVocabulary
+import json
 
 
 def buildVocabulary(args, dataset, dllm, topicQueries):
@@ -18,7 +19,7 @@ def buildVocabulary(args, dataset, dllm, topicQueries):
         - dllm: deep learning re-ranked output
         - topicQueries: topic queries
     '''
-    topK = 50
+    topK = 50 # args.topK
     wmodel = args.wmodel
 
     basemodel = pt.BatchRetrieve(dataset.getIndex(), num_results=topK, wmodel=wmodel)
@@ -29,9 +30,20 @@ def buildVocabulary(args, dataset, dllm, topicQueries):
         rlmscore = rm3_pipe.transform(topicQueries)
         rlmscore.to_csv("data/top50vocabularyRLMScore.csv",index=False,header=["qid","query_0","query"])
         queryVocabulary = generateRLMVocabulary(rlmscore, dllm, index=dataset.getIndex())
+        # print(queryVocabulary)
     elif args.termselection.lower() == "textrank":
         # initiate restricting vocabulary with TextRank
         queryVocabulary = generateLimitedVocabulary(dllm, index=dataset.getIndex())
+    elif args.termselection.lower() == "word2vec":
+        # initiate restricting vocabulary with TextRank
+        if args.word2vecvocab is not None:
+            print("Building vocabulary from file...")
+            with open(args.word2vecvocab) as f:
+                queryVocabulary = json.load(f)
+        else:
+            queryVocabulary = generateWord2vecVocabulary(topicQueries,args.maxbranching,dllm,index=dataset.getIndex())
+            with open("data/word2vecvocabulary.txt", 'w') as f:
+                f.write(json.dumps(queryVocabulary))
     else:
         queryVocabulary = generateVocabulary(dllm, index=dataset.getIndex())
 
@@ -81,23 +93,26 @@ def main(args):
 
     similaritymatrix = args.evalmatrix
     results = []
+
+    # get topicQueries and filter out test_topics
+    assert args.topics is not None, "Please provide the topic file"
+    topicQueries = args.topics
+    topicQueries = pd.read_csv(topicQueries, names=["qid", "query"], index_col=False, dtype=str)
+
     if similaritymatrix.lower()=='rbo':
         assert args.optimalquery is not None, "Please provide the optimal query file"
-        optimalBFS_df = pd.read_csv(args.optimalquery, names=["qid","expandedquery","evaluationmetric","score","originalquery"], index_col=False, dtype=str)
+        optimalBFS_df = pd.read_csv(args.optimalquery, names=["qid","expandedquery","evaluationmetric","score","originalquery"],header=0, index_col=False, dtype=str)
+        # print(optimalBFS_df.head(2))
 
         for row in tqdm(optimalBFS_df.to_dict(orient="records")):
-            qid,query = str(row['Qid']),row['Expanded Query']
-            retrieved_docs = basemodel.search(query)
-            retrieved_docs.qid=qid
-            simscore = float(similarity(retrieved_docs,dllm,simmilaritymatrix="rbo"))
-            results.append((qid,query,similaritymatrix,simscore))
+            qid,query = row['qid'],row['expandedquery']
+            if qid != "qid":
+                retrieved_docs = basemodel.search(query)
+                retrieved_docs.qid=qid
+                simscore = float(similarity(retrieved_docs,dllm,simmilaritymatrix="rbo"))
+                results.append((qid,query,similaritymatrix,simscore))
 
     else:
-
-        # get topicQueries and filter out test_topics
-        assert args.topics is not None, "Please provide the topic file"
-        topicQueries = args.topics
-        topicQueries = pd.read_csv(topicQueries, names=["qid", "query"], index_col=False, dtype=str)
         
         # build vocabulary
         queryVocabulary = buildVocabulary(args, dataset, dllm, topicQueries)
@@ -105,10 +120,11 @@ def main(args):
         print("Running best first search")
         for row in tqdm(topicQueries.to_dict(orient="records")):
             qid, query = row['qid'], row['query']
-            bpn = bestfirstsearch(args,queryVocabulary[qid], qid, query, basemodel, dllm, similaritymatrix)
-            # expandedquery = " ".join([node.token for node in bpn.getParent()[::-1]])
-            # results.append((qid, expandedquery, similaritymatrix, bpn.score))
-            results.append((qid, bpn[0], similaritymatrix, bpn[1]))
+            if qid != "qid":
+                bpn = bestfirstsearch(args,queryVocabulary[qid], qid, query, basemodel, dllm, similaritymatrix)
+                # expandedquery = " ".join([node.token for node in bpn.getParent()[::-1]])
+                # results.append((qid, expandedquery, similaritymatrix, bpn.score))
+                results.append((qid, bpn[0], similaritymatrix, bpn[1]))
 
     print(*results,sep='\n')
     df = pd.DataFrame(results, columns=["qid","expandedquery","evaluationmetric","score"])
@@ -127,10 +143,11 @@ if __name__ == "__main__":
     parser.add_argument('--evalmatrix', dest='evalmatrix',default="jaccard", help='evaluation matrix to get the scores')
     parser.add_argument('--termselection', dest='termselection',default="RM3", help='way to select terms for optimal query')
     parser.add_argument('--topK', dest='topK', default=10, type=int,help='topK of dl model output to compare with LM model')
-    parser.add_argument('--maxbranching', dest='maxbranching',default=30, type=int, help='maximum number of terms to consider in vocabulary')
+    parser.add_argument('--maxbranching', dest='maxbranching',default=20, type=int, help='maximum number of terms to consider in vocabulary')
     parser.add_argument('--maxnumstates', dest='maxnumstates',default=50, type=int, help='maximum number of states to be considered')
     parser.add_argument('--maxnumterms', dest='maxnumterms', default=3, type=int, help='maximum number of terms to consider for optimal query')
     parser.add_argument('--optimalquery', dest='optimalquery', default=None, help='Please provide the optimal query file for best first search')
+    parser.add_argument('--word2vecvocab', dest='word2vecvocab', default=None, help='Please provide the path to word2vec vocabulary file')
     args = parser.parse_args()
     # checks if pyterrier init method is called
     try:

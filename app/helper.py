@@ -4,11 +4,13 @@ import nltk
 #import evaluation matrices: kendall's tau and ranked-bias overlap
 from rbo import RankingSimilarity
 from scipy.stats import kendalltau
+from scipy import spatial
 from rake_nltk import Rake
 import pandas as pd
 from tqdm import tqdm
 import math
 from PriorityQueue import PriorityQueue
+import gensim
 
 ## Get document posting list
 def getDocuments(index,row):
@@ -126,14 +128,20 @@ def generateRLMVocabulary(rlmscores,documents,index):
     - 3. index: pyTerrier index to retrieve the terms from posting
   '''
   queryCorpus = {}
-  for name,group in documents.groupby("qid",as_index=False):
+  # for index,row in rlmscores.iterrows():
+  #   qid=row['qid']
+  #   termRLMScores = {term.split("^")[0]:term.split("^")[1] for term in row['query'].split(" ")[1:]}
+  #   termRLMScores = list(dict(sorted(termRLMScores.items(),key=lambda val:val[1],reverse=True)).keys())
+  #   queryCorpus[str(qid)] = termRLMScores
+
+  for qid,group in documents.groupby("qid",as_index=False):
     vocabulary = []
     # sorting logic with rlm score
-    if name in rlmscores.qid.values:
-      # print(rlmscores[rlmscores.qid==name]['query'])
-      termRLMScores = {term.split("^")[0]:term.split("^")[1] for term in rlmscores[rlmscores.qid==name]['query'].values[0].split(" ")[1:]}
+    if qid in rlmscores.qid.values:
+      # print(rlmscores[rlmscores.qid==qid]['query'])
+      termRLMScores = {term.split("^")[0]:term.split("^")[1] for term in rlmscores[rlmscores.qid==qid]['query'].values[0].split(" ")[1:]}
       termRLMScores = list(dict(sorted(termRLMScores.items(),key=lambda val:val[1],reverse=True)).keys())
-      # termRLMScores = [term.split("^")[0] for term in rlmscores[rlmscores.qid==name]['query'].values[0].split(" ")[1:]]
+      # termRLMScores = [term.split("^")[0] for term in rlmscores[rlmscores.qid==qid]['query'].values[0].split(" ")[1:]]
       for idx,doc in group.iterrows():
         pointer = index.getDocumentIndex().getDocumentEntry(int(doc.docno))
         if pointer is None:
@@ -145,9 +153,60 @@ def generateRLMVocabulary(rlmscores,documents,index):
           if term in termRLMScores:
             vocabulary.append(term)
       ## added to preserve the order of terms generated from documents
-      queryCorpus[str(name)] = sorted(set(vocabulary), key=vocabulary.index)
-
+      queryCorpus[str(qid)] = sorted(set(vocabulary), key=vocabulary.index)
   return queryCorpus
+
+def generateWord2vecVocabulary(topicQueries,maxnumstates,documents,index):
+  '''
+  - building vocabulary and restrict the number terms in vocabulary with word2vec score
+  - parameters:
+    - 1. documents: dataframe of documents
+    - 2. index: pyTerrier index to retrieve the terms from posting
+  '''
+  wv = gensim.models.KeyedVectors.load_word2vec_format('data/Google Word2Vec Model/GoogleNews-vectors-negative300.bin',binary=True)
+
+  queryCorpus = generateVocabulary(documents,index)
+  queryw2vvocabulary = {}
+  wordnotinvocab=[]
+  gensimvocab = wv.index_to_key
+  for row in tqdm(topicQueries.to_dict(orient="records")):
+    qid, query = row['qid'], row['query']
+    #convert dict to vector
+    stemmedword2vec={}
+    for word in queryCorpus[qid]:
+      similarwords={}
+      if word.lower() in gensimvocab:
+        for msword,score in wv.most_similar(word,topn=5):
+          if PorterStemmer().stem(msword)==word and msword.lower() not in similarwords:
+            similarwords[msword.lower()]=wv[msword]
+        if len(similarwords)>0:
+          stemmedword2vec[word] = sum(similarwords.values())/len(similarwords)
+        else:
+          stemmedword2vec[word] = wv[word]
+      else:
+        wordnotinvocab.append(word)
+
+    #get query terms -> convert them to vector -> get cosine similarity -> sort -> get top 10 for each word
+    queryw2vvocabulary[qid] = []
+    vocabulary = {}
+    for qword in query.split(" "):
+      if qword in gensimvocab:
+        qwordvec = wv[qword]
+        similarwords = list(zip(stemmedword2vec.keys(),wv.cosine_similarities(qwordvec,list(stemmedword2vec.values()))))
+        for word,score in similarwords: #[:10]
+          if word in vocabulary:
+            if score>vocabulary[word]:
+              vocabulary[word] = score
+          else:
+            vocabulary[word] = score
+
+    vocabulary = sorted(vocabulary.items(),key=lambda x:x[1],reverse=True)
+    queryw2vvocabulary[qid] = [word for word,score in vocabulary[:maxnumstates]]
+    queryw2vvocabulary[qid].extend(wordnotinvocab)
+
+  # print(queryw2vvocabulary)
+  return queryw2vvocabulary
+
 
 # function to calculate similarity measure
 def similarity(bm25,colbert,simmilaritymatrix="jaccard"):
@@ -210,6 +269,9 @@ def bestfirstsearch(args,vocabulary,qid,originalQuery,basemodel,comparisonDocSet
   originalTermCount=len(originalQueryTerms)
   if addtermsonly:
     cleanedquery = " ".join(originalQueryTerms)
+    # if priorityQueue.already_explored(cleanedquery):
+    #   basemodelscore = priorityQueue.get_state_score(cleanedquery)
+    # else:
     retrieved_docs = basemodel.search(cleanedquery)
     retrieved_docs.qid=qid
     basemodelscore = float(similarity(retrieved_docs,comparisonDocSet,simmilaritymatrix=simmilaritymatrix))
@@ -218,43 +280,54 @@ def bestfirstsearch(args,vocabulary,qid,originalQuery,basemodel,comparisonDocSet
   else:
     originalTermCount = 1
     for term in originalQueryTerms:
-      retrieved_docs = basemodel.search(term)
-      retrieved_docs.qid=qid
-      if not retrieved_docs.empty:
-        basemodelscore = float(similarity(retrieved_docs,comparisonDocSet,simmilaritymatrix=simmilaritymatrix))
-        bestperformingnode = (term,basemodelscore)
-        priorityQueue.add_state(term,basemodelscore)
-        if term in vocabulary:
-          vocabulary.remove(term)
-          vocabulary = [term] + vocabulary
-        else:
-          vocabulary = [term] + vocabulary
+      # if priorityQueue.already_explored(term):
+      #   basemodelscore = priorityQueue.get_state_score(term)
+      # else:
+        retrieved_docs = basemodel.search(term)
+        retrieved_docs.qid=qid
+        if not retrieved_docs.empty:
+          basemodelscore = float(similarity(retrieved_docs,comparisonDocSet,simmilaritymatrix=simmilaritymatrix))
+        # else:
+        #   basemodelscore = None
+      # if basemodelscore is not None:
+          bestperformingnode = (term,basemodelscore)
+          priorityQueue.add_state(term,basemodelscore)
+          if term in vocabulary:
+            vocabulary.remove(term)
+            vocabulary = [term] + vocabulary
+          else:
+            vocabulary = [term] + vocabulary
 
-  print("Vocabulary: ",vocabulary)
-  print("Base model simmilarity score:",bestperformingnode)
+  # print("Vocabulary: ",vocabulary)
+  # print("Base model simmilarity score:",bestperformingnode)
 
   while len(priorityQueue)>0:
-    print("Length priorityQueue:",len(priorityQueue))
+    # print("Length priorityQueue:",len(priorityQueue))
     currentState = priorityQueue.pop_state()
-    print("currentState: ",currentState)
+    # print("currentState: ",currentState)
 
     if currentState[1] > bestperformingnode[1]:
       bestperformingnode=currentState
 
-    print("Best performing node: ",bestperformingnode)
+    # print("Best performing node: ",bestperformingnode)
 
     for token in vocabulary:
       newquery = currentState[0] + " " +token
       expandedquery = " ".join(sorted(newquery.split(" "))) #sort aplhabetically
       #if state not already explored and token is not in previous query
       if priorityQueue.check_state_exists(expandedquery) and token not in currentState[0]:
-        retrieved_docs = basemodel.search(expandedquery)
-        retrieved_docs.qid=qid
-        score = float(similarity(retrieved_docs,comparisonDocSet,simmilaritymatrix=simmilaritymatrix))
-        print(expandedquery,score)
-        newaddedtermcount=len(expandedquery.split(" ")) - originalTermCount
-        if newaddedtermcount <= maxnumterms and score != currentState[1]:
-          priorityQueue.add_state(expandedquery,score)
+        # if priorityQueue.already_explored(expandedquery):
+        #   score = priorityQueue.get_state_score(expandedquery)
+        # else:
+          # print(expandedquery)
+          retrieved_docs = basemodel.search(expandedquery)
+          # print(retrieved_docs.info())
+          retrieved_docs.qid=qid
+          score = float(similarity(retrieved_docs,comparisonDocSet,simmilaritymatrix=simmilaritymatrix))
+          # print(expandedquery,score)
+          newaddedtermcount=len(expandedquery.split(" ")) - originalTermCount
+          if newaddedtermcount <= maxnumterms and score != currentState[1]:
+            priorityQueue.add_state(expandedquery,score)
       
     if len(priorityQueue) >= maxnumstates:
       break
@@ -263,8 +336,9 @@ def bestfirstsearch(args,vocabulary,qid,originalQuery,basemodel,comparisonDocSet
     state,score = priorityQueue.pop_state()
     if bestperformingnode[1] < score:
       bestperformingnode = (state,score)
-
-  # print(priorityQueue.entry_finder)
+  
+  # priorityQueue.save_existing_states()
+  # print(priorityQueue.cur_entry_finder)
   return bestperformingnode
 
 def calTermWeights(queryVocabularies,basemodel,dllm_docs,queries,similarity_type,addtermsonly=False):

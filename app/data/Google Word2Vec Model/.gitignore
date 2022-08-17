@@ -2,5 +2,3 @@
 *
 # Except this file
 !.gitignore
-!Google Word2Vec Model
-Google Word2Vec Model/*

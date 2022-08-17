@@ -56,3 +56,4 @@ warc3-wet==0.2.3
 warc3-wet-clueweb09==0.2.5
 wget==3.2
 zlib-state==0.1.5
+gensim==4.2.0
