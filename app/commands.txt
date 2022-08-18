@@ -1,9 +1,10 @@
 <--Best First Search-->
 
 python -m bestfirstsearch \
---collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
+--index_path "empty" \
 --dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
---topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
+--topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics.csv" \
+--rm3vocab "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/RLM Vocabulary/vocabularyRLMScore_top10docs_terms100.csv"
 --topK 10 \
 --wmodel BM25 \
 --addtermsonly False \
@@ -11,14 +12,15 @@ python -m bestfirstsearch \
 --termselection RM3 \
 --maxbranching 20 \
 --maxnumstates 50 \
---maxnumterms 15
+--maxnumterms 5
 
 
 python -m bestfirstsearch \
---collection "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/collectionandqueries/collection-2020.tsv" \
---dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/trecdl.monot5.rr.pos-scores.res" \
---topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics97.csv" \
+--index_path "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/UoG-Dissertation-git/app/index/custom/data.properties" \
+--dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
+--topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics.csv" \
 --optimalquery "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/UoG-Dissertation-git/app/data/BM25_BESTFIRST_jaccard_trec_dl_top10_terms_30_md5_ms50_addtermsonly_True.csv" \
+--rm3vocab "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/RLM Vocabulary/vocabularyRLMScore_top10docs_terms100.csv"
 --topK 10 \
 --wmodel BM25 \
 --addtermsonly True \

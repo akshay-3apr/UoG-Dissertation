@@ -8,7 +8,21 @@ import pyterrier as pt
 
 class Dataset:
 
-    index=dataset=collection=test_topics=test_qrels = None
+    def __init__(self,index_path):
+        '''
+        path to TREC-19 pyterrier index
+        '''        
+        if index_path == "empty":
+            self.dataset = pt.get_dataset('trec-deep-learning-passages')
+            indexref = self.dataset.get_index(variant='terrier_stemmed')
+            self.index = pt.IndexFactory.of(indexref)
+        else:
+            self.index = pt.IndexFactory.of(index_path)
+
+        self.dataset = None
+        self.collection = None
+        self.test_topics = None
+        self.test_qrels = None
 
     def importdata(self):
         selecteddataset = int(input("Which dataset to load \n 1. TREC \n 2. MSMARCO-PASSAGE \n Please type the respective number: "))

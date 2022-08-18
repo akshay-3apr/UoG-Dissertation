@@ -119,41 +119,20 @@ def generateLimitedVocabulary(documents,index):
   
   return queryCorpus
 
-def generateRLMVocabulary(rlmscores,documents,index):
+def generateRLMVocabulary(rlmscores,noOfTerms):
   '''
   - building vocabulary and restrict the number terms in vocabulary with RLM score
   - parameters:
     - 1. rlmscores: dataframe for every qid with respective terms and their scores
-    - 2. documents: dataframe of documents
-    - 3. index: pyTerrier index to retrieve the terms from posting
+    - 2. noOfTerms: number of terms to be included in the vocabulary
   '''
   queryCorpus = {}
-  # for index,row in rlmscores.iterrows():
-  #   qid=row['qid']
-  #   termRLMScores = {term.split("^")[0]:term.split("^")[1] for term in row['query'].split(" ")[1:]}
-  #   termRLMScores = list(dict(sorted(termRLMScores.items(),key=lambda val:val[1],reverse=True)).keys())
-  #   queryCorpus[str(qid)] = termRLMScores
+  for qid in rlmscores.qid.unique():
+    subset = rlmscores[rlmscores.qid==qid]
+    termRLMScores = {term.split("^")[0]:term.split("^")[1] for term in subset['query'].values[0].split(" ")[1:]}
+    termRLMScores = list(dict(sorted(termRLMScores.items(),key=lambda val:val[1],reverse=True)).keys())
+    queryCorpus[str(qid)] = termRLMScores[0:noOfTerms]
 
-  for qid,group in documents.groupby("qid",as_index=False):
-    vocabulary = []
-    # sorting logic with rlm score
-    if qid in rlmscores.qid.values:
-      # print(rlmscores[rlmscores.qid==qid]['query'])
-      termRLMScores = {term.split("^")[0]:term.split("^")[1] for term in rlmscores[rlmscores.qid==qid]['query'].values[0].split(" ")[1:]}
-      termRLMScores = list(dict(sorted(termRLMScores.items(),key=lambda val:val[1],reverse=True)).keys())
-      # termRLMScores = [term.split("^")[0] for term in rlmscores[rlmscores.qid==qid]['query'].values[0].split(" ")[1:]]
-      for idx,doc in group.iterrows():
-        pointer = index.getDocumentIndex().getDocumentEntry(int(doc.docno))
-        if pointer is None:
-          docid = index.getMetaIndex().getDocument("docno",str(doc.docno))
-          pointer = index.getDocumentIndex().getDocumentEntry(docid)
-        for p in index.getDirectIndex().getPostings(pointer):
-          termid = p.getId()
-          term = index.getLexicon()[termid].getKey()
-          if term in termRLMScores:
-            vocabulary.append(term)
-      ## added to preserve the order of terms generated from documents
-      queryCorpus[str(qid)] = sorted(set(vocabulary), key=vocabulary.index)
   return queryCorpus
 
 def generateWord2vecVocabulary(topicQueries,maxnumstates,documents,index):
@@ -308,6 +287,9 @@ def bestfirstsearch(args,vocabulary,qid,originalQuery,basemodel,comparisonDocSet
 
     if currentState[1] > bestperformingnode[1]:
       bestperformingnode=currentState
+    
+    if bestperformingnode[1] == 1.0:
+      break
 
     # print("Best performing node: ",bestperformingnode)
 

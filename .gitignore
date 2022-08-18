@@ -4,9 +4,9 @@
 **/.DS_Store
 
 app/__pycache__
-app/index
 app/bin
 app/lib
+app/index
 app/pyvenv.cfg
 app/testcode.py
 app/data-COlBERT

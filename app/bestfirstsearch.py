@@ -19,17 +19,16 @@ def buildVocabulary(args, dataset, dllm, topicQueries):
         - dllm: deep learning re-ranked output
         - topicQueries: topic queries
     '''
-    topK = 50 # args.topK
-    wmodel = args.wmodel
-
-    basemodel = pt.BatchRetrieve(dataset.getIndex(), num_results=topK, wmodel=wmodel)
+    # topK = 50 # args.topK
+    # wmodel = args.wmodel
+    # basemodel = pt.BatchRetrieve(dataset.getIndex(), num_results=topK, wmodel=wmodel)
 
     queryVocabulary = None
     if args.termselection.lower() == "rm3":
-        rm3_pipe = basemodel >> pt.rewrite.RM3(dataset.getIndex(), fb_terms=args.maxbranching, fb_docs=topK)
-        rlmscore = rm3_pipe.transform(topicQueries)
-        rlmscore.to_csv("data/top50vocabularyRLMScore.csv",index=False,header=["qid","query_0","query"])
-        queryVocabulary = generateRLMVocabulary(rlmscore, dllm, index=dataset.getIndex())
+        assert args.rm3vocab is not None, "Please provide the rm3 vocabulary tsv file"
+        # qid,query_0,query
+        rlmvocab = pd.read_csv(args.rm3vocab, header=None, names=["qid", "query_0", "query"], index_col=False, dtype=str)
+        queryVocabulary = generateRLMVocabulary(rlmvocab,args.maxbranching)
         # print(queryVocabulary)
     elif args.termselection.lower() == "textrank":
         # initiate restricting vocabulary with TextRank
@@ -60,44 +59,34 @@ def main(args):
     # get weight model
     weightModel = args.wmodel
 
-    # Number of terms to consider
-    noOfTerms = args.maxnumterms
-
     # add and removal of terms to expanded query
     addtermsonly = args.addtermsonly
     
     # maximum number of vocabulary terms to consider
     maxbranching = args.maxbranching
 
-    # get deep learning reranked output csv file
-    dltopK = args.dltop1000
+    # get topicQueries and filter out test_topics
+    assert args.topics is not None, "Please provide the topic tsv file without header"
+    topicQueries = args.topics
+    topicQueries = pd.read_csv(topicQueries,sep="\t",names=["qid", "query"], index_col=False, dtype=str)
 
-    dllm_db = pd.read_csv(dltopK, sep="\t", header=None, names=["qid", "number", "docno", "rank", "score", "msg"], index_col=False)
-    dllm_db.sort_values(["qid", "rank"], inplace=True)
-    dllm_db.qid = dllm_db.qid.astype('str')
-    # colbert_db.info()
-
-    dataset = Dataset()
-    print("Indexing Deep Learning Language model reranked documents")
-    collection = dataset.setCollection(args.collection).getCollection()
-    dllm_res = dllm_db.merge(collection, left_on="docno", right_on="docno")
-    indexDataset = dllm_res.loc[:, ['text', 'docno']]
-    indexDataset.docno = indexDataset.docno.astype('str')
-    dataset.buildCustomIndex(indexDataset)
+    assert args.index_path is not None, "PyTerrier Index path is not specified"
+    dataset = Dataset(args.index_path)
 
     # get topK of deep learning result -> reranked output res file
-    dllm = dllm_res.groupby("qid", as_index=False).apply(lambda subgroup: filterTopKRankRecord(subgroup, dataset.getIndex(), topK=topK))
-    dllm.docno = dllm.docno.astype('str')
+    dltopK = args.dltop1000
+    dllm_db = pd.read_csv(dltopK, sep="\t", header=None, names=["qid", "number", "docno", "rank", "score", "msg"], index_col=False)
+    dllm_db.sort_values(["qid", "rank"], inplace=True)
+    dllm_db = dllm_db.astype({'qid':'str'})
+
+    dllm_res = dllm_db[dllm_db.qid.isin(topicQueries.qid.unique())]
+    dllm = dllm_res.groupby('qid', as_index=False).head(topK)
+    dllm = dllm.astype({'docno':'str'})
 
     basemodel = pt.BatchRetrieve(dataset.getIndex(), num_results=topK, wmodel=weightModel, properties={"termpipelines" : "Stopwords"})
 
     similaritymatrix = args.evalmatrix
     results = []
-
-    # get topicQueries and filter out test_topics
-    assert args.topics is not None, "Please provide the topic file"
-    topicQueries = args.topics
-    topicQueries = pd.read_csv(topicQueries, names=["qid", "query"], index_col=False, dtype=str)
 
     if similaritymatrix.lower()=='rbo':
         assert args.optimalquery is not None, "Please provide the optimal query file"
@@ -121,8 +110,6 @@ def main(args):
             qid, query = row['qid'], row['query']
             if qid != "qid":
                 bpn = bestfirstsearch(args,queryVocabulary[qid], qid, query, basemodel, dllm, similaritymatrix)
-                # expandedquery = " ".join([node.token for node in bpn.getParent()[::-1]])
-                # results.append((qid, expandedquery, similaritymatrix, bpn.score))
                 results.append((qid, bpn[0], similaritymatrix, bpn[1]))
 
     print(*results,sep='\n')
@@ -133,18 +120,19 @@ def main(args):
 
 if __name__ == "__main__":
     parser = ArgumentParser(description='Process cmd arguments for Greedy Search')
-    parser.add_argument('--collection', dest='collection',default=None, help='path to trec collection file to use')
+    parser.add_argument('--index_path', dest='index_path',default=None, help='path to trec 2019 index')
     parser.add_argument('--dltop1000', dest='dltop1000', default=None,help='path to dltop1000 of DL model csv file')
     parser.add_argument('--topics', dest='topics',default=None, help='path to topics csv file')
     parser.add_argument('--qrels', dest='qrels',default=None, help='path to qrels csv file')
+    parser.add_argument('--rm3vocab', dest='rm3vocab',default=None, help='path to rm3 vocabulary file')
     parser.add_argument('--wmodel', dest='wmodel', default="BM25",help='weight model to be used to fetch records')
     parser.add_argument('--addtermsonly', dest='addtermsonly', type=lambda x: bool(strtobool(x)),default=True, help='boolean value to add terms to the query and remove when false')
     parser.add_argument('--evalmatrix', dest='evalmatrix',default="jaccard", help='evaluation matrix to get the scores')
     parser.add_argument('--termselection', dest='termselection',default="RM3", help='way to select terms for optimal query')
     parser.add_argument('--topK', dest='topK', default=10, type=int,help='topK of dl model output to compare with LM model')
-    parser.add_argument('--maxbranching', dest='maxbranching',default=20, type=int, help='maximum number of terms to consider in vocabulary')
+    parser.add_argument('--maxbranching', dest='maxbranching',default=30, type=int, help='maximum number of terms to consider in vocabulary')
     parser.add_argument('--maxnumstates', dest='maxnumstates',default=50, type=int, help='maximum number of states to be considered')
-    parser.add_argument('--maxnumterms', dest='maxnumterms', default=3, type=int, help='maximum number of terms to consider for optimal query')
+    parser.add_argument('--maxnumterms', dest='maxnumterms', default=5, type=int, help='maximum number of terms to consider for optimal query')
     parser.add_argument('--optimalquery', dest='optimalquery', default=None, help='Please provide the optimal query file for best first search')
     parser.add_argument('--word2vecvocab', dest='word2vecvocab', default=None, help='Please provide the path to word2vec vocabulary file')
     args = parser.parse_args()
