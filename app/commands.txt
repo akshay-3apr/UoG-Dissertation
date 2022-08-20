@@ -1,3 +1,15 @@
+reranked.res.trec-debasis.trec
+trecdl.monot5.rr.pos-scores.res
+res.bm25.1000.mt5.50.dt5.50
+BM25_deepct.2019.res
+BM25_deepct_ColBERT.2019.res
+BM25_docT5q.2019.res
+ColbertE2E.2019.res
+colberte2e_bertqe.2019.res
+colbertprf_rank_beta1.2019.res
+ANCE.2019.res
+
+
 <--Best First Search-->
 
 python -m bestfirstsearch \
@@ -19,16 +31,16 @@ python -m bestfirstsearch \
 --index_path "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/UoG-Dissertation-git/app/index/custom/data.properties" \
 --dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
 --topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics.csv" \
---optimalquery "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/UoG-Dissertation-git/app/data/BM25_BESTFIRST_jaccard_trec_dl_top10_terms_30_md5_ms50_addtermsonly_True.csv" \
---rm3vocab "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/RLM Vocabulary/vocabularyRLMScore_top10docs_terms100.csv"
+--optimalquery "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/UoG-Dissertation-git/app/data/BM25_BESTFIRST_jaccard_trec_dl_top10_terms_30_md15_ms500_addtermsonly_False.csv" \
+--rm3vocab "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/RLM Vocabulary/vocabularyRLMScore_top10docs_terms100.csv" \
 --topK 10 \
 --wmodel BM25 \
---addtermsonly True \
---evalmatrix rbo \
+--addtermsonly False \
+--evalmatrix jaccard \
 --termselection RM3 \
 --maxbranching 30 \
---maxnumstates 50 \
---maxnumterms 5
+--maxnumstates 500 \
+--maxnumterms 15
 
 
 --word2vecvocab "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/UoG-Dissertation-git/app/data/word2vecvocabulary.txt" \

@@ -6,7 +6,7 @@ import pyterrier as pt
 import pandas as pd
 from distutils.util import strtobool
 from nltk.stem.porter import PorterStemmer
-from helper import filterTopKRankRecord, generateVocabulary, similarity, generateRLMVocabulary, generateLimitedVocabulary,bestfirstsearch,generateWord2vecVocabulary
+from helper import generateVocabulary, similarity, generateRLMVocabulary, generateLimitedVocabulary,bestfirstsearch,generateWord2vecVocabulary
 import json
 
 
@@ -98,7 +98,7 @@ def main(args):
             if qid != "qid":
                 retrieved_docs = basemodel.search(query)
                 retrieved_docs.qid=qid
-                simscore = float(similarity(retrieved_docs,dllm,simmilaritymatrix="rbo"))
+                simscore = float(similarity(retrieved_docs,dllm,simmilaritymatrix=similaritymatrix))
                 results.append((qid,query,similaritymatrix,simscore))
     else:
         
@@ -121,21 +121,22 @@ def main(args):
 if __name__ == "__main__":
     parser = ArgumentParser(description='Process cmd arguments for Greedy Search')
     parser.add_argument('--index_path', dest='index_path',default=None, help='path to trec 2019 index')
-    parser.add_argument('--dltop1000', dest='dltop1000', default=None,help='path to dltop1000 of DL model csv file')
+    parser.add_argument('--dltop1000', dest='dltop1000', default=None,help='path to neural model topDocument csv file')
     parser.add_argument('--topics', dest='topics',default=None, help='path to topics csv file')
     parser.add_argument('--qrels', dest='qrels',default=None, help='path to qrels csv file')
     parser.add_argument('--rm3vocab', dest='rm3vocab',default=None, help='path to rm3 vocabulary file')
     parser.add_argument('--wmodel', dest='wmodel', default="BM25",help='weight model to be used to fetch records')
-    parser.add_argument('--addtermsonly', dest='addtermsonly', type=lambda x: bool(strtobool(x)),default=True, help='boolean value to add terms to the query and remove when false')
+    parser.add_argument('--addtermsonly', dest='addtermsonly', type=lambda x: bool(strtobool(x)),default=False, help='boolean value to add terms to the query and remove when false')
     parser.add_argument('--evalmatrix', dest='evalmatrix',default="jaccard", help='evaluation matrix to get the scores')
     parser.add_argument('--termselection', dest='termselection',default="RM3", help='way to select terms for optimal query')
     parser.add_argument('--topK', dest='topK', default=10, type=int,help='topK of dl model output to compare with LM model')
     parser.add_argument('--maxbranching', dest='maxbranching',default=30, type=int, help='maximum number of terms to consider in vocabulary')
-    parser.add_argument('--maxnumstates', dest='maxnumstates',default=50, type=int, help='maximum number of states to be considered')
-    parser.add_argument('--maxnumterms', dest='maxnumterms', default=5, type=int, help='maximum number of terms to consider for optimal query')
+    parser.add_argument('--maxnumstates', dest='maxnumstates',default=500, type=int, help='maximum number of states to be considered')
+    parser.add_argument('--maxnumterms', dest='maxnumterms', default=15, type=int, help='maximum number of terms to consider for optimal query')
     parser.add_argument('--optimalquery', dest='optimalquery', default=None, help='Please provide the optimal query file for best first search')
     parser.add_argument('--word2vecvocab', dest='word2vecvocab', default=None, help='Please provide the path to word2vec vocabulary file')
     args = parser.parse_args()
+
     # checks if pyterrier init method is called
     try:
         if not pt.started():

@@ -11,23 +11,24 @@ from helper import filterTopKRankRecord,calTermWeights,generateVocabulary,simila
 def fetchtermweights(args,dllm_res,dataset,topicQueries):
 
     ## get topK of ColBERT reranked output
-    dllm = dllm_res.groupby("qid",as_index=False).apply(lambda subgroup:filterTopKRankRecord(subgroup,dataset.getIndex(),topK=50))
+    dllm = dllm_res.groupby("qid",as_index=False).head(10)
 
     ##filter out test_topics
     # topicQueries = test_topics[test_topics.qid.isin(colbert_res.qid)]
 
     ## get baseline model
     wmodel=args.wmodel
-    basemodel = pt.BatchRetrieve(dataset.getIndex(),num_results=50,wmodel=wmodel,properties={"termpipelines" : "Stopwords"})
-
+    basemodel = pt.BatchRetrieve(dataset.getIndex(),num_results=10,wmodel=wmodel,properties={"termpipelines" : "Stopwords"})
+    retrieved_docs = basemodel.transform(topicQueries.query)
+    buildvocab = retrieved_docs.groupby("qid",as_index=False).apply(lambda subgroup:filterTopKRankRecord(subgroup,dataset.getIndex(),topK=10))
     #set flag to split query terms
     addtermsonly= args.addtermsonly
 
     #initiate the process
-    queryVocabulary = generateVocabulary(dllm,index=dataset.getIndex())
+    queryVocabulary = generateVocabulary(buildvocab,index=dataset.getIndex())
     result = calTermWeights(queryVocabulary,basemodel,dllm,topicQueries,similarity_type='jaccard',addtermsonly=addtermsonly)
     termWeights = pd.DataFrame(result, columns =['qid','original_query','expanded_query','word','jscore','improvement'])
-    termWeights.to_csv(f"data/ColBERT_{wmodel}_termweights_trec_dl_top_50_addtermsonly_{addtermsonly}.csv",\
+    termWeights.to_csv(f"data/ColBERT_{wmodel}_termweights_trec_dl_top_10_addtermsonly_{addtermsonly}.csv",\
         header=['qid','original_query','expanded_query','word','jscore','improvement'],index=False)
 
     return termWeights
