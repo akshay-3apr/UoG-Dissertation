@@ -10,6 +10,36 @@ colbertprf_rank_beta1.2019.res
 ANCE.2019.res
 
 
+python -m bestfirstsearch \
+--index_path "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/UoG-Dissertation-git/app/index/custom/data.properties" \
+--dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
+--topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics.csv" \
+--optimalquery "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/UoG-Dissertation-git/app/data/BM25_BESTFIRST_jaccard_trec_dl_top10_terms_30_md15_ms500_addtermsonly_False.csv" \
+--rm3vocab "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/RLM Vocabulary/vocabularyRLMScore_top10docs_terms100.csv" \
+--topK 10 \
+--wmodel BM25 \
+--addtermsonly False \
+--evalmatrix jaccard \
+--termselection RM3 \
+--maxbranching 30 \
+--maxnumstates 500 \
+--maxnumterms 15
+
+
+python -m greedysearch \
+--index_path "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/UoG-Dissertation-git/app/index/custom/data.properties" \
+--dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/reranked.res.trec-debasis.trec" \
+--topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics.csv" \
+--termweights "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/UoG-Dissertation-git/app/data/ColBERT_BM25_termweights_trec_dl_top_10_addtermsonly_False.csv" \
+--topK 10 \
+--addtermsonly False \
+--evalmatrix rbo \
+--maxnumterms 15
+
+
+
+
+
 <--Best First Search-->
 
 python -m bestfirstsearch \

@@ -19,13 +19,13 @@ def fetchtermweights(args,dllm_res,dataset,topicQueries):
     ## get baseline model
     wmodel=args.wmodel
     basemodel = pt.BatchRetrieve(dataset.getIndex(),num_results=10,wmodel=wmodel,properties={"termpipelines" : "Stopwords"})
-    retrieved_docs = basemodel.transform(topicQueries.query)
-    buildvocab = retrieved_docs.groupby("qid",as_index=False).apply(lambda subgroup:filterTopKRankRecord(subgroup,dataset.getIndex(),topK=10))
+    retrieved_docs = basemodel.transform(topicQueries)
+    vocabdocs = retrieved_docs.groupby("qid",as_index=False).apply(lambda subgroup:filterTopKRankRecord(subgroup,dataset.getIndex(),topK=10))
     #set flag to split query terms
     addtermsonly= args.addtermsonly
 
     #initiate the process
-    queryVocabulary = generateVocabulary(buildvocab,index=dataset.getIndex())
+    queryVocabulary = generateVocabulary(vocabdocs,index=dataset.getIndex())
     result = calTermWeights(queryVocabulary,basemodel,dllm,topicQueries,similarity_type='jaccard',addtermsonly=addtermsonly)
     termWeights = pd.DataFrame(result, columns =['qid','original_query','expanded_query','word','jscore','improvement'])
     termWeights.to_csv(f"data/ColBERT_{wmodel}_termweights_trec_dl_top_10_addtermsonly_{addtermsonly}.csv",\
@@ -54,29 +54,28 @@ def greedysearch(args,pt):
     #split query term
     addtermsonly= args.addtermsonly
 
+    # get topicQueries and filter out test_topics
+    assert args.topics is not None, "Please provide the topic tsv file without header"
+    topicQueries = args.topics
+    topicQueries = pd.read_csv(topicQueries,sep="\t",names=["qid", "query"], index_col=False, dtype=str)
+
+    assert args.index_path is not None, "PyTerrier Index path is not specified"
+    dataset = Dataset(args.index_path)
+
     #get deep learning reranked output csv file
     dltopK = args.dltop1000
     
-    dllm_db = pd.read_csv(dltopK,sep=" ",header=None,names=["qid","number","docno","rank","score","msg"],index_col=False)
+    dllm_db = pd.read_csv(dltopK,sep="\t",header=None,names=["qid","number","docno","rank","score","msg"],index_col=False)
     dllm_db.sort_values(["qid","rank"],inplace=True)
-    dllm_db.qid=dllm_db.qid.astype('str')
+    dllm_db = dllm_db.astype({'qid':'str'})
     # colbert_db.info()
 
-    dataset = Dataset()
-    print("Indexing Deep Learning Language model reranked documents")
-    collection = dataset.setCollection(args.collection).getCollection()
-    dllm_res = dllm_db.merge(collection,left_on="docno",right_on="docno")
-    indexDataset = dllm_res.loc[:,['text','docno']]
-    indexDataset.docno = indexDataset.docno.astype('str')
-    dataset.buildCustomIndex(indexDataset)
-
-    #get topicQueries and filter out test_topics
-    assert args.topics is not None, "Please provide the topic file"
-    topicQueries = args.topics
-    topicQueries = pd.read_csv(topicQueries,names=["qid","query"],index_col=False,dtype=str)
+    dllm_res = dllm_db[dllm_db.qid.isin(topicQueries.qid.unique())]
+    dllm = dllm_res.groupby('qid', as_index=False).head(topK)
+    dllm = dllm.astype({'docno':'str'})
 
     #cal term weights
-    if args.termweights:
+    if args.termweights and args.evalmatrix.lower() == "rbo" :
         termWeights = pd.read_csv(args.termweights,header=0,names=["qid","original_query","expanded_query","word","jscore","improvement"])
     else:
         print("Calculating term weights as the term weights are not provided")
@@ -91,11 +90,6 @@ def greedysearch(args,pt):
     ## similarity matrix
     simmilaritymatrix=args.evalmatrix
 
-    ## get topK of ColBERT reranked output
-    dllm = dllm_res.groupby("qid",as_index=False).apply(lambda subgroup:filterTopKRankRecord(subgroup,dataset.getIndex(),topK=topK))
-    ## changing astype of colbert docno column
-    dllm.docno=dllm.docno.astype('str')
-
     ## get baseline performance
     basemodel = pt.BatchRetrieve(dataset.getIndex(),num_results=topK,wmodel=termWeightModel,properties={"termpipelines" : "Stopwords"})
     jaccsimilarity = []
@@ -105,7 +99,6 @@ def greedysearch(args,pt):
     
     print("Calculating similarity score for each optimal query")
     for idx,data in tqdm(queries.iterrows()):
-        # print(data.final_query)
         cleanquery = " ".join(list(map(stemmer.stem,data.final_query.split(" "))))
         retrieved_doc = basemodel.search(cleanquery)
         retrieved_doc.qid = data.qid
@@ -126,7 +119,7 @@ def greedysearch(args,pt):
 if __name__=="__main__":
     parser = ArgumentParser(description='Process cmd arguments for Greedy Search')
     parser.add_argument('--topK', dest='topK', default=10,type=int, help='topK of dl model output to compare with LM model')
-    parser.add_argument('--collection', dest='collection', default=None, help='path to trec collection file to use')
+    parser.add_argument('--index_path', dest='index_path',default=None, help='path to trec 2019 index')
     parser.add_argument('--dltop1000', dest='dltop1000', default=None, help='path to dltop1000 of DL model csv file')
     parser.add_argument('--topics', dest='topics', default=None, help='path to topics csv file')
     parser.add_argument('--qrels', dest='qrels', default=None, help='path to qrels csv file')

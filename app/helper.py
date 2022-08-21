@@ -336,7 +336,7 @@ def calTermWeights(queryVocabularies,basemodel,dllm_docs,queries,similarity_type
   '''
   # changing dtype of colbert_docs docno column for comparison
   stemmer = PorterStemmer()
-  dllm_docs.docno = dllm_docs.docno.astype('str')
+  dllm_docs = dllm_docs.astype({'docno':'str'})
   jaccsimilarity = []
   for row in tqdm(queries.to_dict(orient="records")):
       qid,query = row['qid'],row['query']

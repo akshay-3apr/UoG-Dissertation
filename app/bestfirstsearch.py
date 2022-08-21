@@ -142,7 +142,7 @@ if __name__ == "__main__":
         if not pt.started():
             pt.init(boot_packages=["com.github.terrierteam:terrier-prf:-SNAPSHOT"], logging='ERROR')
     except Exception as e:
-        # print(e)
+        print(e)
         print("Not able to load pyTerrier. Try running the python file again")
         exit(1)
     
