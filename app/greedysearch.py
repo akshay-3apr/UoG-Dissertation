@@ -64,21 +64,26 @@ def greedysearch(args,pt):
 
     #get deep learning reranked output csv file
     dltopK = args.dltop1000
-    
+
     dllm_db = pd.read_csv(dltopK,sep="\t",header=None,names=["qid","number","docno","rank","score","msg"],index_col=False)
     dllm_db.sort_values(["qid","rank"],inplace=True)
     dllm_db = dllm_db.astype({'qid':'str'})
     # colbert_db.info()
 
     dllm_res = dllm_db[dllm_db.qid.isin(topicQueries.qid.unique())]
-    dllm = dllm_res.groupby('qid', as_index=False).head(topK)
+
+    if args.relevant:
+        dllm = dllm_res.groupby('qid', as_index=False).apply(lambda g: g[g['rank'] <= topK])
+    else:
+        dllm = dllm_res.groupby('qid', as_index=False).head(topK)
     dllm = dllm.astype({'docno':'str'})
 
     #cal term weights
-    if args.termweights and args.evalmatrix.lower() == "rbo" :
+    if not args.optimise:
+        assert args.termweights is not None, "Please provide precomputed term weights to calculate similarity score"
         termWeights = pd.read_csv(args.termweights,header=0,names=["qid","original_query","expanded_query","word","jscore","improvement"])
     else:
-        print("Calculating term weights as the term weights are not provided")
+        print("Calculating term weights to optimise")
         termWeights = fetchtermweights(args,dllm_res,dataset,topicQueries)
 
     termWeights = termWeights[~termWeights.word.isin(termWeights.original_query.unique()[0].split(' '))]
@@ -111,7 +116,8 @@ def greedysearch(args,pt):
 
     print(*jaccsimilarity,sep="\n")
     df = pd.DataFrame(jaccsimilarity, columns =['qid','original_query','final_query','word','score','improvement'])
-    df.to_csv(f"data/ColBERT_{termWeightModel}_greedySearch_top{topK}_{noOfTerms}_addtermsonly_{addtermsonly}_{simmilaritymatrix}.csv",\
+    if args.optimise:
+        df.to_csv(f"data/{termWeightModel}_greedySearch_top{topK}_{noOfTerms}_addtermsonly_{addtermsonly}_{simmilaritymatrix}.csv",\
         header=['qid','original_query','final_query','word','score','improvement'],index=False)
     print(f"\n{termWeightModel} average {simmilaritymatrix} considering {noOfTerms} expanded query terms: ",round(df.score.mean(),4),"\n")
 
@@ -128,6 +134,8 @@ if __name__=="__main__":
     parser.add_argument('--addtermsonly', dest='addtermsonly', type=lambda x:bool(strtobool(x)) , default=True, help='boolean value to add terms to the query and remove when false')
     parser.add_argument('--maxnumterms', dest='maxnumterms', default=3,type=int, help='maximum number of terms to consider for optimal query')
     parser.add_argument('--evalmatrix', dest='evalmatrix', default="jaccard", help='evaluation matrix to get the scores')
+    parser.add_argument('--optimise', dest='optimise', type=lambda x: bool(strtobool(x)),default=False, help='Please set if you want to optimise on the res file')
+    parser.add_argument('--relevant', dest='relevant', type=lambda x: bool(strtobool(x)),default=False, help='Please set if you want to fetech result for relevant set ')
     args=parser.parse_args()
     # print(args)
     # checks if pyterrier init method is called

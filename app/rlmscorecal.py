@@ -32,7 +32,10 @@ def caloptimalrlmscore(args,dataset,termcount,docCount):
     dllm_db = dllm_db.astype({'qid':'str'})
 
     dllm_res = dllm_db[dllm_db.qid.isin(topicQueries.qid.unique())]
-    dllm = dllm_res.groupby('qid', as_index=False).head(topK)
+    if args.relevant:
+        dllm = dllm_res.groupby('qid', as_index=False).apply(lambda g: g[g['rank'] <= topK])
+    else:
+        dllm = dllm_res.groupby('qid', as_index=False).head(topK)
     dllm = dllm.astype({'docno':'str'})
     
     basemodel = pt.BatchRetrieve(dataset.getIndex(),num_results=topK,wmodel=weightModel)
@@ -60,15 +63,18 @@ if __name__ == "__main__":
     parser.add_argument('--wmodel', dest='wmodel', default="BM25",help='weight model to be used to fetch records')
     parser.add_argument('--evalmatrix', dest='evalmatrix',default="jaccard", help='evaluation matrix to get the scores')
     parser.add_argument('--topK', dest='topK', default=10, type=int,help='topK of dl model output to compare with LM model')
-    parser.add_argument('--gridsearchlist', dest='gridsearchlist', default=None, help='Please provide provide the grid search values for rlm score calculation (",") separated')
+    parser.add_argument('--gridsearchlist', dest='gridsearchlist', default=None, help='Please provide the grid search values for rlm score calculation (",") separated')
+    parser.add_argument('--optimise', dest='optimise', type=lambda x: bool(strtobool(x)),default=False, help='Please set if you want to optimise on the res file')
+    parser.add_argument('--relevant', dest='relevant', type=lambda x: bool(strtobool(x)),default=False, help='Please set if you want to fetech result for relevant set ')
     args = parser.parse_args()
+
     # checks if pyterrier init method is called
     try:
         if not pt.started():
             pt.init(boot_packages=["com.github.terrierteam:terrier-prf:-SNAPSHOT"], logging='ERROR')
     except Exception as e:
-        # print(e)
         print("Not able to load pyTerrier. Try running the python file again")
+        print(e)
         exit(1)
 
     # code to fetch terms from corpus and check the jaccard simiarity between the LMs and ColBERT
@@ -78,7 +84,7 @@ if __name__ == "__main__":
     gridsearchparam = list(map(int,args.gridsearchlist.split(",")))
     assert args.index_path is not None, "PyTerrier Index path is not specified"
     dataset = Dataset(args.index_path)
-    if args.evalmatrix == "jaccard":
+    if args.optimise:
         for fb_docs in gridsearchparam:
             for fb_terms in gridsearchparam:
                 print(fb_terms,fb_docs)

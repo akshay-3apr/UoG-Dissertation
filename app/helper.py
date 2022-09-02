@@ -219,7 +219,7 @@ def similarity(bm25,colbert,simmilaritymatrix="jaccard"):
     # print("colbert: ",colbert)
     score = RankingSimilarity(bm25, colbert).rbo(p=0.9)
   else:
-    print(f"{type} similarity yet to be implemented.")
+    print(f"{simmilaritymatrix} similarity yet to be implemented.")
   return score
 
 

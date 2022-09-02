@@ -11,7 +11,7 @@ class Dataset:
     def __init__(self,index_path):
         '''
         path to TREC-19 pyterrier index
-        '''        
+        '''
         if index_path == "empty":
             self.dataset = pt.get_dataset('trec-deep-learning-passages')
             indexref = self.dataset.get_index(variant='terrier_stemmed')

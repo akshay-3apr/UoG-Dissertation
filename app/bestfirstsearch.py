@@ -80,7 +80,11 @@ def main(args):
     dllm_db = dllm_db.astype({'qid':'str'})
 
     dllm_res = dllm_db[dllm_db.qid.isin(topicQueries.qid.unique())]
-    dllm = dllm_res.groupby('qid', as_index=False).head(topK)
+
+    if args.relevant:
+        dllm = dllm_res.groupby('qid', as_index=False).apply(lambda g: g[g['rank'] <= topK])
+    else:
+        dllm = dllm_res.groupby('qid', as_index=False).head(topK)
     dllm = dllm.astype({'docno':'str'})
 
     basemodel = pt.BatchRetrieve(dataset.getIndex(), num_results=topK, wmodel=weightModel, properties={"termpipelines" : "Stopwords"})
@@ -88,7 +92,7 @@ def main(args):
     similaritymatrix = args.evalmatrix
     results = []
 
-    if similaritymatrix.lower()=='rbo':
+    if not args.optimise:
         assert args.optimalquery is not None, "Please provide the optimal query file"
         optimalBFS_df = pd.read_csv(args.optimalquery, names=["qid","expandedquery","evaluationmetric","score","originalquery"],header=0, index_col=False, dtype=str)
         # print(optimalBFS_df.head(2))
@@ -116,7 +120,8 @@ def main(args):
     df = pd.DataFrame(results, columns=["qid","expandedquery","evaluationmetric","score"])
     df = df.merge(topicQueries,left_on="qid",right_on="qid")
     print(f"Average {similaritymatrix} score of {weightModel} using BFS: ", df.score.mean())
-    df.to_csv(f"data/{weightModel}_BESTFIRST_{similaritymatrix}_trec_dl_top{topK}_terms_{maxbranching}_md{args.maxnumterms}_ms{args.maxnumstates}_addtermsonly_{addtermsonly}.csv",header=["qid","expandedquery","evaluationmetric","score","originalquery"], index=False)
+    if args.optimise:
+        df.to_csv(f"data/{weightModel}_BESTFIRST_{similaritymatrix}_trec_dl_top{topK}_terms_{maxbranching}_md{args.maxnumterms}_ms{args.maxnumstates}_addtermsonly_{addtermsonly}.csv",header=["qid","expandedquery","evaluationmetric","score","originalquery"], index=False)
 
 if __name__ == "__main__":
     parser = ArgumentParser(description='Process cmd arguments for Greedy Search')
@@ -135,6 +140,8 @@ if __name__ == "__main__":
     parser.add_argument('--maxnumterms', dest='maxnumterms', default=15, type=int, help='maximum number of terms to consider for optimal query')
     parser.add_argument('--optimalquery', dest='optimalquery', default=None, help='Please provide the optimal query file for best first search')
     parser.add_argument('--word2vecvocab', dest='word2vecvocab', default=None, help='Please provide the path to word2vec vocabulary file')
+    parser.add_argument('--optimise', dest='optimise', type=lambda x: bool(strtobool(x)),default=False, help='Please set if you want to optimise on the res file')
+    parser.add_argument('--relevant', dest='relevant', type=lambda x: bool(strtobool(x)),default=False, help='Please set if you want to fetech result for relevant set ')
     args = parser.parse_args()
 
     # checks if pyterrier init method is called
