@@ -20,8 +20,7 @@ $ git clone https://github.com/akshay-3apr/UoG-Dissertation.git
 Once you have ran the above command, the project will get extracted to your local system. The following folders will get created
 ```
 .
-├── Notebook
-│   └── Dissertation.ipynb
+UoG-Dissertation
 ├── app
 │   ├── Node.py
 │   ├── PriorityQueue.py
@@ -48,7 +47,7 @@ Before we start with setup of the code. This project is heavily tested on MacOS 
 Change the directory to start the setup installation:
 
 ```
-$ cd app
+$ cd UoG-Dissertation/app
 $ pip install -r requirements.txt
 ```
 
@@ -56,7 +55,7 @@ The files are installed and now we can run the below commands to collect the res
 
 To collect results for best first search algorithm run the below command:
 ```
-python -m bestfirstsearch \
+$ python -m bestfirstsearch \
 --index_path "path/to/pyterrier/index/data.properties" \
 --dltop1000 "path/to/neuralmodel/topdocuments/filename.tsv" \
 --topics "path/to/topics.tsv" \
@@ -87,7 +86,7 @@ python -m bestfirstsearch \
 
 To collect results for greedy algorithm run the below command:
 ```
-python -m greedysearch \
+$ python -m greedysearch \
 --index_path "path/to/pyterrier/index/data.properties" \ \
 --dltop1000 "path/to/neuralmodel/topdocuments/filename.tsv" \
 --termweights "path/to/project/app/data/Greedy_termweights.csv" \
@@ -110,7 +109,7 @@ python -m greedysearch \
 
 To collect results for RM3 grid Search run the below command:
 ```
-python -m rlmscorecal \
+$ python -m rlmscorecal \
 --index_path "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/UoG-Dissertation-git/app/index/custom/data.properties" \
 --dltop1000 "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Debasis Data/ANCE.2019.res" \
 --topics "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/topics.tsv" \
@@ -128,8 +127,11 @@ python -m rlmscorecal \
 
 To collect IR evaluation score of MAP@10 and nDCG@10, run below command
 ```
-python -m irevaluation \
+$ python -m irevaluation \
 --index_path "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/UoG-Dissertation-git/app/index/custom/data.properties" \
 --topics "path/to/final_expanded_query/test_topics.tsv" \
 --qrels "/Users/akshayprakash/Documents/UoG/Semester 3/dissertation/Trec-DL-data/eval/test_qrels.tsv"
 ```
+
+A result and outputs of this experiment are uploaded in below onedrive:
+> https://gla-my.sharepoint.com/:f:/g/personal/2684995a_student_gla_ac_uk/ElZho_xKjLBBsSWsUS9sY-MB9ZUxunxQ5XwtlmQRCR4jEw?e=w8LENp
