@@ -74,9 +74,15 @@ python -m bestfirstsearch \
 --relevant False
 ```
 
-> Parameters like `optimise` shdould be turned `False` when not optimising. `relevant` parameter is used when we are evaluating using relevant documents.
+
+> Parameters like `optimise` shdould be turned `False` when not optimising
+>
+> `relevant` parameter is used when we are evaluating using relevant documents.
+>
 > `evalmatrix` should be `jaccard` when optimising and `rbo` when evaluating the generated query.
+>
 > `maxbranching` is vocabulary size.
+>
 > For rest parameter like `maxnumterms`,`addtermsonly`,`termselection` and `maxnumstates` please look at the submitted dissertation report Table 5.1 in Chapter-5.
 
 To collect results for greedy algorithm run the below command:
@@ -95,8 +101,11 @@ python -m greedysearch \
 ```
 
 > Parameters like `optimise` shdould be turned `False` when not optimising. `relevant` parameter is used when we are evaluating using relevant documents.
+>
 > `evalmatrix` should be `jaccard` when optimising and `rbo` when evaluating the generated query.
+>
 > `maxbranching` is vocabulary size.
+>
 > For rest parameter like `maxnumterms` and `addtermsonly` please look at the submitted dissertation report Table 5.1 in Chapter-5.
 
 To collect results for RM3 grid Search run the below command:
@@ -113,6 +122,7 @@ python -m rlmscorecal \
 ```
 
 > Parameters like `optimise` shdould be turned `False` when not optimising. `relevant` parameter is used when we are evaluating using relevant documents.
+>
 > `evalmatrix` should be `jaccard` when optimising and `rbo` when evaluating the generated query.
 
 
